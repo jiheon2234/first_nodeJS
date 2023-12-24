@@ -117,7 +117,7 @@ welcomeForm.addEventListener("submit", handleWelcomeSubmit);
 // Socket code
 socket.on("welcome", async () => {
   myDataChannel = myPeerConnection.createDataChannel("chat");
-  myDataChannel.addEventListener("message", console.log);
+  myDataChannel.addEventListener("message", handleMsg);
   console.log("made data channel");
 
   const offer = await myPeerConnection.createOffer();
@@ -129,7 +129,7 @@ socket.on("welcome", async () => {
 socket.on("offer", async (offer) => {
   myPeerConnection.addEventListener("datachannel", (event) => {
     myDataChannel = event.channel;
-    myDataChannel.addEventListener("message", console.log);
+    myDataChannel.addEventListener("message", handleMsg);
   });
 
   console.log("received the offer");
@@ -146,7 +146,7 @@ socket.on("answer", (answer) => {
 });
 
 socket.on("ice", (ice) => {
-  console.log("recieved candidate");
+  console.log("recieved candidate", ice);
   myPeerConnection.addIceCandidate(ice);
 });
 
@@ -167,6 +167,7 @@ function makeConnection() {
 }
 
 function handleIce(data) {
+  console.log(data.candidate);
   console.log("sent candidate");
   socket.emit("ice", data.candidate, roomName);
 }
@@ -174,4 +175,35 @@ function handleIce(data) {
 function handleAddStream(data) {
   const peerFace = document.getElementById("peerFace");
   peerFace.srcObject = data.stream;
+}
+
+//DATA CHANNEL
+const chatform = document.getElementById("chatform");
+chatform.addEventListener("submit", handleChatForm);
+
+function handleMsg(msg) {
+  p = createP(`SOMEONE : ${msg.data} ${new Date()}`);
+  const mychat = document.getElementById("mychat");
+  mychat.appendChild(p);
+}
+
+function handleChatForm(e) {
+  e.preventDefault();
+  if (!myDataChannel) {
+    alert("no Data channel");
+    return;
+  }
+  const myinput = chatform.querySelector("input");
+  const mychat = document.getElementById("mychat");
+  const tmp = myinput.value;
+  p = createP(`ME : ${tmp} ${new Date()}`);
+  mychat.appendChild(p);
+  myDataChannel.send(tmp);
+  myinput.value = "";
+}
+
+function createP(String) {
+  const p = document.createElement("p");
+  p.innerHTML = String;
+  return p;
 }
